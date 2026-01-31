@@ -1,8 +1,6 @@
 package spring.secondbite.security;
 
 import io.jsonwebtoken.Jwts;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -75,34 +73,5 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
-    }
-
-    /**
-     * Adiciona um cookie HTTP com o token JWT na resposta.
-     *
-     * @param response resposta HTTP
-     * @param token    token JWT
-     */
-    public void setJwtCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie("access_token", token);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(3600);
-        cookie.setSecure(false);
-        response.addCookie(cookie);
-    }
-
-    /**
-     * Expira (remove) o cookie JWT da resposta.
-     *
-     * @param response resposta HTTP
-     */
-    public void expireJwtCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie("access_token", "");
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        cookie.setSecure(false);
-        response.addCookie(cookie);
     }
 }

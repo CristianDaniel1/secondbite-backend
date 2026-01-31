@@ -1,6 +1,5 @@
 package spring.secondbite.services;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -8,9 +7,7 @@ import org.springframework.stereotype.Service;
 import spring.secondbite.dtos.auth.AuthResponseDto;
 import spring.secondbite.dtos.auth.LoginUserDto;
 import spring.secondbite.dtos.consumers.ConsumerDto;
-import spring.secondbite.dtos.consumers.ConsumerResponseDto;
 import spring.secondbite.dtos.marketers.MarketerDto;
-import spring.secondbite.dtos.marketers.MarketerResponseDto;
 import spring.secondbite.entities.AppUser;
 import spring.secondbite.entities.Consumer;
 import spring.secondbite.entities.Marketer;
@@ -41,7 +38,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final SecurityService securityService;
 
-    public ConsumerResponseDto createConsumer(ConsumerDto consumerDto,  HttpServletResponse response) {
+    public AuthResponseDto createConsumer(ConsumerDto consumerDto) {
         Consumer consumerEntity = consumerMapper.toEntity(consumerDto);
         consumerEntity.getUser().setRoles(Set.of(Role.CONSUMER));
 
@@ -50,12 +47,11 @@ public class AuthService {
 
         Consumer consumer = consumerRepository.save(consumerEntity);
         String token = jwtService.generateToken(consumer.getUser());
-        jwtService.setJwtCookie(response, token);
 
-        return consumerMapper.toDTO(consumer);
+        return new AuthResponseDto(consumerMapper.toDTO(consumer), token);
     }
 
-    public MarketerResponseDto createMarketer(MarketerDto marketerDto, HttpServletResponse response) {
+    public AuthResponseDto createMarketer(MarketerDto marketerDto) {
         Marketer marketerEntity = marketerMapper.toEntity(marketerDto);
         marketerEntity.getUser().setRoles(Set.of(Role.MARKETER));
 
@@ -64,12 +60,11 @@ public class AuthService {
 
         Marketer marketer = marketerRepository.save(marketerEntity);
         String token = jwtService.generateToken(marketer.getUser());
-        jwtService.setJwtCookie(response, token);
 
-        return marketerMapper.toDTO(marketer);
+        return new AuthResponseDto(marketerMapper.toDTO(marketer), token);
     }
 
-    public AuthResponseDto login(LoginUserDto userDto, HttpServletResponse response) {
+    public AuthResponseDto login(LoginUserDto userDto) {
         AppUser user = userRepository.findByEmail(userDto.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
 
@@ -86,12 +81,7 @@ public class AuthService {
         } else
             throw new BadCredentialsException("Unknown role");
 
-        jwtService.setJwtCookie(response, token);
         return new AuthResponseDto(userDetails, token);
-    }
-
-    public void logout(HttpServletResponse response) {
-        jwtService.expireJwtCookie(response);
     }
 
     public Object checkUser() {
@@ -108,7 +98,6 @@ public class AuthService {
     public Optional<AppUser> findUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-
 
     public Consumer findConsumerByUser(AppUser user) {
         return consumerRepository.findByUser(user)

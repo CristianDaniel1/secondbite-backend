@@ -3,7 +3,6 @@ package spring.secondbite.security;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +15,13 @@ import spring.secondbite.exceptions.UnauthorizedException;
 import spring.secondbite.services.AuthService;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
 public class JwtCustomAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final AuthService userService;
-    private final JwtAuthenticationEntryPoint entryPoint;
+//    private final JwtAuthenticationEntryPoint entryPoint;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -31,7 +29,7 @@ public class JwtCustomAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractTokenFromCookie(request);
+        String token = extractTokenFromHeader(request);
 
         if (token != null) {
             try {
@@ -53,14 +51,12 @@ public class JwtCustomAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String extractTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
-
-        return Arrays.stream(request.getCookies())
-                .filter(c -> c.getName().equals("access_token"))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
     }
 
 //    private boolean isPublicEndpoint(HttpServletRequest request) {

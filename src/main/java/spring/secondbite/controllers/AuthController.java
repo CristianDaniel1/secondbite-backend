@@ -1,6 +1,5 @@
 package spring.secondbite.controllers;
 
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,9 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import spring.secondbite.dtos.auth.AuthResponseDto;
 import spring.secondbite.dtos.auth.LoginUserDto;
 import spring.secondbite.dtos.consumers.ConsumerDto;
-import spring.secondbite.dtos.consumers.ConsumerResponseDto;
 import spring.secondbite.dtos.marketers.MarketerDto;
-import spring.secondbite.dtos.marketers.MarketerResponseDto;
 import spring.secondbite.services.AuthService;
 
 @RestController
@@ -22,33 +19,27 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login(
-            @RequestBody LoginUserDto dto,
-            HttpServletResponse response) {
-        AuthResponseDto authUser = authService.login(dto, response);
+    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginUserDto dto) {
+        AuthResponseDto authUser = authService.login(dto);
         return ResponseEntity.ok(authUser);
     }
 
     @PostMapping("/register/consumer")
-    public ResponseEntity<ConsumerResponseDto> registerConsumer(
-            @Valid @RequestBody ConsumerDto dto,
-            HttpServletResponse response) {
-        ConsumerResponseDto consumer = authService.createConsumer(dto, response);
+    public ResponseEntity<AuthResponseDto> registerConsumer(@Valid @RequestBody ConsumerDto dto) {
+        AuthResponseDto consumer = authService.createConsumer(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(consumer);
     }
 
     @PostMapping("/register/marketer")
-    public ResponseEntity<MarketerResponseDto> registerMarketer(
-            @Valid @RequestBody MarketerDto dto,
-            HttpServletResponse response) {
-        MarketerResponseDto marketer = authService.createMarketer(dto, response);
+    public ResponseEntity<AuthResponseDto> registerMarketer(
+            @Valid @RequestBody MarketerDto dto) {
+        AuthResponseDto marketer = authService.createMarketer(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(marketer);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletResponse response) {
-        authService.logout(response);
-        return ResponseEntity.ok("Successfully logged out.");
+    public ResponseEntity<String> logout() {
+        return ResponseEntity.ok("Successfully logged out (token should be discarded by client).");
     }
 
     @GetMapping("/check")
