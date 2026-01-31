@@ -3,9 +3,11 @@ package spring.secondbite.controllers;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import spring.secondbite.dtos.PageResponseDto;
 import spring.secondbite.dtos.products.ProductDto;
 import spring.secondbite.dtos.products.ProductResponseDto;
@@ -46,20 +48,24 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('MARKETER')")
-    public ResponseEntity<ProductResponseDto> createProduct(@RequestBody @Valid ProductDto dto) {
-        ProductResponseDto createdProduct = service.createProduct(dto);
+    public ResponseEntity<ProductResponseDto> createProduct(
+            @RequestPart("product") @Valid ProductDto dto,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) {
+        ProductResponseDto createdProduct = service.createProduct(dto, images);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
     }
 
-    @PutMapping("{id}")
+    @PutMapping(value = "{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('MARKETER')")
     public ResponseEntity<ProductResponseDto> updateProduct(
             @PathVariable("id") UUID id,
-            @RequestBody @Valid ProductDto dto
+            @RequestPart("product") @Valid ProductDto dto,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
-        ProductResponseDto updatedProduct = service.updateProduct(id, dto);
+        ProductResponseDto updatedProduct = service.updateProduct(id, dto, images);
         return ResponseEntity.ok(updatedProduct);
     }
 

@@ -11,6 +11,8 @@ import spring.secondbite.entities.enums.Category;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -45,6 +47,11 @@ public class Product {
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_filename")
+    private List<String> images = new ArrayList<>();
 
     @LastModifiedDate
     @Column(name = "modified_at")

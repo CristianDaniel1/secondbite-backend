@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import spring.secondbite.dtos.PageResponseDto;
 import spring.secondbite.dtos.products.ProductDto;
 import spring.secondbite.dtos.products.ProductResponseDto;
@@ -32,6 +33,7 @@ public class ProductService {
     private final MarketerService marketerService;
     private final ProductMapper mapper;
 
+    private final FileStorageService fileStorageService;
     private final SecurityService securityService;
 
     public PageResponseDto<ProductResponseDto> findAllProducts(
@@ -72,23 +74,37 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponseDto createProduct(ProductDto dto) {
+    public ProductResponseDto createProduct(ProductDto dto, List<MultipartFile> imageFiles) {
         AppUser user = securityService.getLoggedUserOrThrow();
-
         Marketer marketer = marketerService.findMarketerByUser(user);
+
         Product product = mapper.toEntity(dto);
         product.setMarketer(marketer);
+
+        if (imageFiles != null && !imageFiles.isEmpty()) {
+            List<String> filenames = imageFiles.stream()
+                    .map(fileStorageService::saveFile)
+                    .collect(Collectors.toList());
+            product.setImages(filenames);
+        }
 
         Product saved = repository.save(product);
         return mapper.toResponseDto(saved);
     }
 
     @Transactional
-    public ProductResponseDto updateProduct(UUID productId, ProductDto dto) {
+    public ProductResponseDto updateProduct(UUID productId, ProductDto dto, List<MultipartFile> imageFiles) {
         Product existingProduct = findProductOrThrow(productId);
         checkProductIsFromMarketer(existingProduct);
 
         mapper.updateFromDto(dto, existingProduct);
+
+        if (imageFiles != null && !imageFiles.isEmpty()) {
+            List<String> newFilenames = imageFiles.stream()
+                    .map(fileStorageService::saveFile)
+                    .toList();
+            existingProduct.getImages().addAll(newFilenames);
+        }
 
         Product updated = repository.save(existingProduct);
         return mapper.toResponseDto(updated);
