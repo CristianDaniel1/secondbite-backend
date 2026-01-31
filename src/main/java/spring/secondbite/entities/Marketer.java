@@ -11,7 +11,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Marketer {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.UUID)
