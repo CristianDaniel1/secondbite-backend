@@ -16,7 +16,7 @@ public class Marketer {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "cnpj", length = 14, nullable = false, unique = true)
+    @Column(name = "cnpj", nullable = false, unique = true)
     private String cnpj;
 
     @Column(name = "phone", length = 15)

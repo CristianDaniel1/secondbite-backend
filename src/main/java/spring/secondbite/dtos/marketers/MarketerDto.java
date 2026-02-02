@@ -23,7 +23,6 @@ public record MarketerDto(
         String password,
 
         @NotBlank(message = "CNPJ is required")
-        @Size(min = 14, max = 14, message = "CNPJ must be exactly 14 digits")
         String cnpj,
 
         @Size(max = 20, message = "Zipcode must be at most 20 characters")
