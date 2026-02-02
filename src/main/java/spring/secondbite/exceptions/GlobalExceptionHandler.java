@@ -116,7 +116,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleDataIntegrityViolation(DataIntegrityViolationException e) {
-        return ErrorResponse.conflict("Cannot delete entity due to existing relationships.");
+        return ErrorResponse.conflict("Ação inválida: Ocorreu um conflito com entidades já existentes.");
     }
 
     @ExceptionHandler(MultipartException.class)

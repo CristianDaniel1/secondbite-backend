@@ -30,7 +30,8 @@ public class Cart {
     private List<CartItem> items = new ArrayList<>();
 
     @LastModifiedDate
-    private LocalDateTime updatedAt;
+    @Column(name = "modified_at")
+    private LocalDateTime modifiedAt;
 
     public BigDecimal getTotalAmount() {
         return items.stream()

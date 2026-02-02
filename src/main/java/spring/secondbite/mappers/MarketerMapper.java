@@ -22,6 +22,8 @@ public abstract class MarketerMapper {
     @Mapping(target = "name", source = "user.name")
     @Mapping(target = "email", source = "user.email")
     @Mapping(target = "roles", source = "user.roles")
+    @Mapping(target = "createdAt", source = "user.createdAt")
+    @Mapping(target = "modifiedAt", source = "user.modifiedAt")
     public abstract MarketerResponseDto toDTO(Marketer company);
 
     @Mapping(target = "id", ignore = true)

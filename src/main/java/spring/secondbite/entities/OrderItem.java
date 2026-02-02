@@ -27,7 +27,7 @@ public class OrderItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false)
+    @Column(name = "price_at_purchase", nullable = false)
     private BigDecimal priceAtPurchase;
 
     public BigDecimal getSubTotal() {

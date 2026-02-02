@@ -12,6 +12,7 @@ import spring.secondbite.entities.AppUser;
 import spring.secondbite.entities.Consumer;
 import spring.secondbite.entities.Marketer;
 import spring.secondbite.entities.enums.Role;
+import spring.secondbite.exceptions.ConflictException;
 import spring.secondbite.exceptions.UserNotFoundException;
 import spring.secondbite.mappers.ConsumerMapper;
 import spring.secondbite.mappers.MarketerMapper;
@@ -39,6 +40,7 @@ public class AuthService {
     private final SecurityService securityService;
 
     public AuthResponseDto createConsumer(ConsumerDto consumerDto) {
+        checkUserExists(consumerDto.email());
         Consumer consumerEntity = consumerMapper.toEntity(consumerDto);
         consumerEntity.getUser().setRoles(Set.of(Role.CONSUMER));
 
@@ -52,6 +54,7 @@ public class AuthService {
     }
 
     public AuthResponseDto createMarketer(MarketerDto marketerDto) {
+        checkUserExists(marketerDto.email());
         Marketer marketerEntity = marketerMapper.toEntity(marketerDto);
         marketerEntity.getUser().setRoles(Set.of(Role.MARKETER));
 
@@ -108,4 +111,13 @@ public class AuthService {
         return marketerRepository.findByUser(user)
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
     }
+
+    public void checkUserExists(String email) {
+        if (userRepository.existsByEmail(email)) throwConflict();
+    }
+
+    private void throwConflict() {
+        throw new ConflictException("Já existe um usuário com esses dados");
+    }
+
 }
