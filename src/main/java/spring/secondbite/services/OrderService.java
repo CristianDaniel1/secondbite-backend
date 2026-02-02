@@ -39,73 +39,19 @@ public class OrderService {
 
     @Transactional
     public List<OrderResponseDto> checkout() {
-        AppUser user = securityService.getLoggedUserOrThrow();
-        Consumer consumer = consumerService.findConsumerByUser(user);
-
+        Consumer consumer = getLoggedConsumer();
         Cart cart = cartService.getCartEntity(consumer);
 
-        if (cart.getItems().isEmpty())
-            throw new ConflictException("Carrinho vazio.");
-
-        Map<Marketer, List<CartItem>> itemsByMarketer = cart.getItems().stream()
-                .collect(Collectors.groupingBy(item -> item.getProduct().getMarketer()));
-
-        List<Order> createdOrders = new ArrayList<>();
-
-        itemsByMarketer.forEach((marketer, items) -> {
-            Order order = new Order();
-            order.setConsumer(consumer);
-            order.setMarketer(marketer);
-            order.setStatus(Status.PENDING);
-
-            BigDecimal total = BigDecimal.ZERO;
-            List<OrderItem> orderItems = new ArrayList<>();
-
-            for (CartItem cartItem : items) {
-                Product product = cartItem.getProduct();
-
-                if (product.getQuantity() < cartItem.getQuantity())
-                    throw new ConflictException("Produto " + product.getName() + " sem estoque suficiente.");
-
-                product.setQuantity(product.getQuantity() - cartItem.getQuantity());
-                productRepository.save(product);
-
-                OrderItem orderItem = new OrderItem();
-                orderItem.setOrder(order);
-                orderItem.setProduct(product);
-                orderItem.setQuantity(cartItem.getQuantity());
-                orderItem.setPriceAtPurchase(product.getPrice());
-
-                total = total.add(orderItem.getSubTotal());
-                orderItems.add(orderItem);
-            }
-
-            order.setItems(orderItems);
-            order.setTotalAmount(total);
-
-            createdOrders.add(orderRepository.save(order));
-        });
-
+        validateCartNotEmpty(cart);
+        List<Order> orders = processCheckout(cart, consumer);
         cartService.clearCart();
 
-        return createdOrders.stream().map(mapper::toDto).toList();
+        return orders.stream().map(mapper::toDto).toList();
     }
 
     public List<OrderResponseDto> getOrders(Status status) {
         AppUser user = securityService.getLoggedUserOrThrow();
-
-        Specification<Order> specs = Specification.where(null);
-
-        if (user.getRoles().contains(Role.CONSUMER)) {
-            Consumer consumer = consumerService.findConsumerByUser(user);
-            specs = specs.and(OrderSpecs.hasConsumer(consumer));
-        } else if (user.getRoles().contains(Role.MARKETER)) {
-            Marketer marketer = marketerService.findMarketerByUser(user);
-            specs = specs.and(OrderSpecs.hasMarketer(marketer));
-        }
-
-        if (status != null)
-            specs = specs.and(OrderSpecs.hasStatus(status));
+        Specification<Order> specs = buildOrderSpecification(user, status);
 
         return orderRepository.findAll(specs).stream()
                 .map(mapper::toDto)
@@ -114,7 +60,7 @@ public class OrderService {
 
     public OrderResponseDto getOrderById(UUID id) {
         Order order = findOrderOrThrow(id);
-        checkPermission(order);
+        checkPermission(order, securityService.getLoggedUserOrThrow());
         return mapper.toDto(order);
     }
 
@@ -122,24 +68,87 @@ public class OrderService {
     public OrderResponseDto updateStatus(UUID id, Status newStatus) {
         Order order = findOrderOrThrow(id);
         AppUser user = securityService.getLoggedUserOrThrow();
+        validateStatusChange(order, user, newStatus);
 
-        if (user.getRoles().contains(Role.CONSUMER)) {
-            checkPermission(order);
-            if (newStatus == Status.CANCELED && order.getStatus() == Status.PENDING) {
-                restoreStock(order);
-                order.setStatus(Status.CANCELED);
-            } else
-                throw new NotAllowedException("Consumidores só podem cancelar pedidos pendentes.");
-        }
-        else if (user.getRoles().contains(Role.MARKETER)) {
-            checkPermission(order);
-            if (newStatus == Status.CANCELED) restoreStock(order);
+        if (newStatus == Status.CANCELED)
+            restoreStock(order);
 
-            order.setStatus(newStatus);
-        } else
-            throw new NotAllowedException("Acesso negado.");
-
+        order.setStatus(newStatus);
         return mapper.toDto(orderRepository.save(order));
+    }
+
+    private List<Order> processCheckout(Cart cart, Consumer consumer) {
+        Map<Marketer, List<CartItem>> itemsByMarketer = cart.getItems().stream()
+                .collect(Collectors.groupingBy(item -> item.getProduct().getMarketer()));
+
+        List<Order> createdOrders = new ArrayList<>();
+
+        itemsByMarketer.forEach((marketer, items) -> {
+            Order order = createOrderForMarketer(consumer, marketer, items);
+            createdOrders.add(order);
+        });
+
+        return createdOrders;
+    }
+
+    private Order createOrderForMarketer(Consumer consumer, Marketer marketer, List<CartItem> cartItems) {
+        Order order = new Order();
+        order.setConsumer(consumer);
+        order.setMarketer(marketer);
+        order.setStatus(Status.PENDING);
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (CartItem cartItem : cartItems) {
+            OrderItem orderItem = createOrderItem(order, cartItem);
+            orderItems.add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getSubTotal());
+        }
+
+        order.setItems(orderItems);
+        order.setTotalAmount(totalAmount);
+
+        return orderRepository.save(order);
+    }
+
+    private OrderItem createOrderItem(Order order, CartItem cartItem) {
+        Product product = cartItem.getProduct();
+        int quantity = cartItem.getQuantity();
+
+        validateAndReduceStock(product, quantity);
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(order);
+        orderItem.setProduct(product);
+        orderItem.setQuantity(quantity);
+        orderItem.setPriceAtPurchase(product.getPrice());
+
+        return orderItem;
+    }
+
+    private void validateAndReduceStock(Product product, int quantity) {
+        if (product.getQuantity() < quantity)
+            throw new ConflictException("Estoque insuficiente para o produto: " + product.getName());
+        product.setQuantity(product.getQuantity() - quantity);
+        productRepository.save(product);
+    }
+
+    private void validateStatusChange(Order order, AppUser user, Status newStatus) {
+        checkPermission(order, user);
+
+        boolean isConsumer = user.getRoles().contains(Role.CONSUMER);
+        boolean isMarketer = user.getRoles().contains(Role.MARKETER);
+
+        if (isConsumer) {
+            if (newStatus != Status.CANCELED)
+                throw new NotAllowedException("Consumidores só podem cancelar pedidos.");
+            if (order.getStatus() != Status.PENDING)
+                throw new NotAllowedException("Só é possível cancelar pedidos pendentes.");
+        } else if (isMarketer) {
+            if (order.getStatus() == Status.CANCELED)
+                throw new ConflictException("Não é possível alterar um pedido já cancelado.");
+        }
     }
 
     private void restoreStock(Order order) {
@@ -150,21 +159,47 @@ public class OrderService {
         }
     }
 
-    private Order findOrderOrThrow(UUID id) {
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Pedido não encontrado"));
+    private void validateCartNotEmpty(Cart cart) {
+        if (cart.getItems() == null || cart.getItems().isEmpty())
+            throw new ConflictException("Não é possível finalizar um carrinho vazio.");
     }
 
-    private void checkPermission(Order order) {
+    private Consumer getLoggedConsumer() {
         AppUser user = securityService.getLoggedUserOrThrow();
+        return consumerService.findConsumerByUser(user);
+    }
 
+    private Specification<Order> buildOrderSpecification(AppUser user, Status status) {
+        Specification<Order> specs = (root, query, cb) -> cb.conjunction();
+
+        if (user.getRoles().contains(Role.CONSUMER)) {
+            Consumer consumer = consumerService.findConsumerByUser(user);
+            specs = specs.and(OrderSpecs.hasConsumer(consumer));
+        } else if (user.getRoles().contains(Role.MARKETER)) {
+            Marketer marketer = marketerService.findMarketerByUser(user);
+            specs = specs.and(OrderSpecs.hasMarketer(marketer));
+        }
+        if (status != null)
+            specs = specs.and(OrderSpecs.hasStatus(status));
+
+        return specs;
+    }
+
+    private Order findOrderOrThrow(UUID id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Pedido não encontrado."));
+    }
+
+    private void checkPermission(Order order, AppUser user) {
         boolean isConsumerOwner = user.getRoles().contains(Role.CONSUMER)
                 && order.getConsumer().getUser().getId().equals(user.getId());
 
         boolean isMarketerOwner = user.getRoles().contains(Role.MARKETER)
                 && order.getMarketer().getUser().getId().equals(user.getId());
 
-        if (!isConsumerOwner && !isMarketerOwner && !user.getRoles().contains(Role.ADMIN))
+        boolean isAdmin = user.getRoles().contains(Role.ADMIN);
+
+        if (!isConsumerOwner && !isMarketerOwner && !isAdmin)
             throw new NotAllowedException("Você não tem permissão para acessar este pedido.");
     }
 }

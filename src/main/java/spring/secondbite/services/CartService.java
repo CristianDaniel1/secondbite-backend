@@ -123,4 +123,9 @@ public class CartService {
                     return cartRepository.save(newCart);
                 });
     }
+
+    public Cart getCartEntity(Consumer consumer) {
+        return cartRepository.findByConsumer(consumer)
+                .orElseThrow(() -> new NotFoundException("Carrinho não encontrado para este consumidor."));
+    }
 }
