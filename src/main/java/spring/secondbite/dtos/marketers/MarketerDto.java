@@ -30,5 +30,8 @@ public record MarketerDto(
         String zipcode,
 
         @Size(max = 15, message = "Phone must be at most 15 characters")
-        String phone) {
+        String phone,
+        Double latitude,
+        Double longitude,
+        String stallName) {
 }
