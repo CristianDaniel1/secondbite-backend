@@ -44,4 +44,10 @@ public class MarketerController {
         MarketerResponseDto deletedMarketer = service.deleteMarketer(id);
         return ResponseEntity.ok(deletedMarketer);
     }
+
+    @GetMapping("/map-locations")
+    public ResponseEntity<List<MarketerResponseDto>> getAllMarketersForMap() {
+        // Pode ser otimizado ainda
+        return ResponseEntity.ok(service.findAllMarketers());
+    }
 }

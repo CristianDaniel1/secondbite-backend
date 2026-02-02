@@ -22,7 +22,7 @@ public class Consumer {
     @Column(name = "phone", length = 15)
     private String phone;
 
-    @Column(name = "zipcode", length = 20, nullable = false)
+    @Column(name = "zipcode", length = 20)
     private String zipcode;
 
     @OneToOne(optional = false, cascade = CascadeType.ALL)

@@ -22,8 +22,17 @@ public class Marketer {
     @Column(name = "phone", length = 15)
     private String phone;
 
-    @Column(name = "zipcode", length = 20, nullable = false)
+    @Column(name = "zipcode", length = 20)
     private String zipcode;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "stall_name")
+    private String stallName;
 
     @OneToOne(optional = false, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false, unique = true)

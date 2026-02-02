@@ -25,7 +25,6 @@ public record ConsumerDto(
         @NotBlank(message = "CPF is required")
         String cpf,
 
-        @NotBlank(message = "zipcode is required")
         @Size(max = 20, message = "Zipcode must be at most 20 characters")
         String zipcode,
 
