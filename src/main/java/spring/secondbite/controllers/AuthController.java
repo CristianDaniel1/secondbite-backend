@@ -1,5 +1,6 @@
 package spring.secondbite.controllers;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,27 +20,32 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginUserDto dto) {
-        AuthResponseDto authUser = authService.login(dto);
+    public ResponseEntity<AuthResponseDto> login(
+            @RequestBody LoginUserDto dto,
+            HttpServletResponse response) {
+        AuthResponseDto authUser = authService.login(dto, response);
         return ResponseEntity.ok(authUser);
     }
 
     @PostMapping("/register/consumer")
-    public ResponseEntity<AuthResponseDto> registerConsumer(@Valid @RequestBody ConsumerDto dto) {
-        AuthResponseDto consumer = authService.createConsumer(dto);
+    public ResponseEntity<AuthResponseDto> registerConsumer(
+            @Valid @RequestBody ConsumerDto dto, HttpServletResponse response) {
+        AuthResponseDto consumer = authService.createConsumer(dto, response);
         return ResponseEntity.status(HttpStatus.CREATED).body(consumer);
     }
 
     @PostMapping("/register/marketer")
     public ResponseEntity<AuthResponseDto> registerMarketer(
-            @Valid @RequestBody MarketerDto dto) {
-        AuthResponseDto marketer = authService.createMarketer(dto);
+            @Valid @RequestBody MarketerDto dto,
+            HttpServletResponse response) {
+        AuthResponseDto marketer = authService.createMarketer(dto, response);
         return ResponseEntity.status(HttpStatus.CREATED).body(marketer);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout() {
-        return ResponseEntity.ok("Successfully logged out (token should be discarded by client).");
+    public ResponseEntity<String> logout(HttpServletResponse response) {
+        authService.logout(response);
+        return ResponseEntity.ok("Successfully logged out.");
     }
 
     @GetMapping("/check")

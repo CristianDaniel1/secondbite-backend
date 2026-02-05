@@ -1,5 +1,6 @@
 package spring.secondbite.services;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -39,7 +40,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final SecurityService securityService;
 
-    public AuthResponseDto createConsumer(ConsumerDto consumerDto) {
+    public AuthResponseDto createConsumer(ConsumerDto consumerDto, HttpServletResponse response) {
         checkUserExists(consumerDto.email());
         Consumer consumerEntity = consumerMapper.toEntity(consumerDto);
         consumerEntity.getUser().setRoles(Set.of(Role.CONSUMER));
@@ -49,11 +50,12 @@ public class AuthService {
 
         Consumer consumer = consumerRepository.save(consumerEntity);
         String token = jwtService.generateToken(consumer.getUser());
+        jwtService.setJwtCookie(response, token);
 
         return new AuthResponseDto(consumerMapper.toDTO(consumer), token);
     }
 
-    public AuthResponseDto createMarketer(MarketerDto marketerDto) {
+    public AuthResponseDto createMarketer(MarketerDto marketerDto, HttpServletResponse response) {
         checkUserExists(marketerDto.email());
         Marketer marketerEntity = marketerMapper.toEntity(marketerDto);
         marketerEntity.getUser().setRoles(Set.of(Role.MARKETER));
@@ -63,11 +65,12 @@ public class AuthService {
 
         Marketer marketer = marketerRepository.save(marketerEntity);
         String token = jwtService.generateToken(marketer.getUser());
+        jwtService.setJwtCookie(response, token);
 
         return new AuthResponseDto(marketerMapper.toDTO(marketer), token);
     }
 
-    public AuthResponseDto login(LoginUserDto userDto) {
+    public AuthResponseDto login(LoginUserDto userDto, HttpServletResponse response) {
         AppUser user = userRepository.findByEmail(userDto.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
 
@@ -84,7 +87,12 @@ public class AuthService {
         } else
             throw new BadCredentialsException("Unknown role");
 
+        jwtService.setJwtCookie(response, token);
         return new AuthResponseDto(userDetails, token);
+    }
+
+    public void logout(HttpServletResponse response) {
+        jwtService.expireJwtCookie(response);
     }
 
     public Object checkUser() {

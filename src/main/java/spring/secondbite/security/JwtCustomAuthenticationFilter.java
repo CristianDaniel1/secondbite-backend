@@ -3,6 +3,7 @@ package spring.secondbite.security;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import spring.secondbite.exceptions.UnauthorizedException;
 import spring.secondbite.services.AuthService;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
@@ -29,7 +31,7 @@ public class JwtCustomAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractTokenFromHeader(request);
+        String token = extractTokenFromCookie(request);
 
         if (token != null) {
             try {
@@ -57,6 +59,16 @@ public class JwtCustomAuthenticationFilter extends OncePerRequestFilter {
             return authHeader.substring(7);
         }
         return null;
+    }
+
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        return Arrays.stream(request.getCookies())
+                .filter(c -> c.getName().equals("access_token"))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
 //    private boolean isPublicEndpoint(HttpServletRequest request) {
