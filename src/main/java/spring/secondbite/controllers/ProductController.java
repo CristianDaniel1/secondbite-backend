@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import spring.secondbite.dtos.PageResponseDto;
+import spring.secondbite.dtos.products.ProductDetailResponseDto;
 import spring.secondbite.dtos.products.ProductDto;
 import spring.secondbite.dtos.products.ProductResponseDto;
 import spring.secondbite.entities.enums.Category;
@@ -43,8 +44,8 @@ public class ProductController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<ProductResponseDto> getProductById(@PathVariable("id") UUID id) {
-        ProductResponseDto product = service.findProductById(id);
+    public ResponseEntity<ProductDetailResponseDto> getProductById(@PathVariable("id") UUID id) {
+        ProductDetailResponseDto product = service.findProductById(id);
         return ResponseEntity.ok(product);
     }
 

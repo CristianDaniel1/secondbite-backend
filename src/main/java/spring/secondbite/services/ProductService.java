@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import spring.secondbite.dtos.PageResponseDto;
+import spring.secondbite.dtos.products.ProductDetailResponseDto;
 import spring.secondbite.dtos.products.ProductDto;
 import spring.secondbite.dtos.products.ProductResponseDto;
 import spring.secondbite.entities.AppUser;
@@ -19,6 +20,7 @@ import spring.secondbite.exceptions.NotAllowedException;
 import spring.secondbite.exceptions.NotFoundException;
 import spring.secondbite.mappers.ProductMapper;
 import spring.secondbite.repositories.ProductRepository;
+import spring.secondbite.repositories.ReviewRepository;
 import spring.secondbite.repositories.specs.ProductSpecs;
 import spring.secondbite.security.SecurityService;
 
@@ -30,6 +32,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductService {
     private final ProductRepository repository;
+    private final ReviewRepository reviewRepository;
+
     private final MarketerService marketerService;
     private final ProductMapper mapper;
 
@@ -59,9 +63,16 @@ public class ProductService {
         );
     }
 
-    public ProductResponseDto findProductById(UUID id) {
+    public ProductDetailResponseDto findProductById(UUID id) {
         Product product = findProductOrThrow(id);
-        return mapper.toResponseDto(product);
+        Marketer marketer = product.getMarketer();
+        UUID marketerId = marketer.getId();
+
+        Double averageRating = reviewRepository.getAverageRating(marketerId);
+        ProductResponseDto productResponseDto = mapper.toResponseDto(product);
+
+        return mapper.toDetailResponseDto(productResponseDto, marketerId,
+                marketer.getUser().getName(), marketer.getStallName(), averageRating);
     }
 
     public List<ProductResponseDto> findProductsByMarketer(UUID id) {
