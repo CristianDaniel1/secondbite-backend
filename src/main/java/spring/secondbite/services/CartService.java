@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import spring.secondbite.dtos.cart.CartItemDto;
+import spring.secondbite.dtos.cart.CartItemResponseDto;
 import spring.secondbite.dtos.cart.CartResponseDto;
 import spring.secondbite.entities.*;
 import spring.secondbite.exceptions.ConflictException;
@@ -13,6 +14,7 @@ import spring.secondbite.repositories.CartItemRepository;
 import spring.secondbite.repositories.CartRepository;
 import spring.secondbite.security.SecurityService;
 
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,7 +32,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public CartResponseDto getMyCart() {
         Cart cart = getOrCreateCartForLoggedUser();
-        return mapper.toCartDto(cart);
+        return toSortedResponse(cart);
     }
 
     @Transactional
@@ -62,7 +64,7 @@ public class CartService {
         }
 
         Cart savedCart = cartRepository.save(cart);
-        return mapper.toCartDto(savedCart);
+        return toSortedResponse(savedCart);
     }
 
     @Transactional
@@ -86,7 +88,7 @@ public class CartService {
             cartItemRepository.save(item);
         }
 
-        return mapper.toCartDto(cartRepository.save(cart));
+        return toSortedResponse(cartRepository.save(cart));
     }
 
     @Transactional
@@ -102,7 +104,7 @@ public class CartService {
         cart.getItems().remove(item);
         cartItemRepository.delete(item);
 
-        return mapper.toCartDto(cartRepository.save(cart));
+        return toSortedResponse(cartRepository.save(cart));
     }
 
     @Transactional
@@ -127,5 +129,11 @@ public class CartService {
     public Cart getCartEntity(Consumer consumer) {
         return cartRepository.findByConsumer(consumer)
                 .orElseThrow(() -> new NotFoundException("Carrinho não encontrado para este consumidor."));
+    }
+
+    private CartResponseDto toSortedResponse(Cart cart) {
+        CartResponseDto dto = mapper.toCartDto(cart);
+        dto.items().sort(Comparator.comparing(item -> item.product().name()));
+        return dto;
     }
 }
