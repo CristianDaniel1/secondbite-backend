@@ -21,6 +21,9 @@ public class JwtService {
     private final SecretKey secretKey;
     private final PasswordEncoder encoder;
 
+    private static final long EXPIRATION_TIME_MS = 1000 * 60 * 60 * 5;
+    private static final int COOKIE_EXPIRATION_SEC = 5 * 60 * 60;
+
     /**
      * Codifica uma senha em texto simples para uma representação segura (hash).
      *
@@ -57,7 +60,7 @@ public class JwtService {
                 .add(claims)
                 .subject(user.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() * 60 * 60 * 60 * 10))
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME_MS))
                 .and()
                 .signWith(secretKey)
                 .compact();
@@ -87,7 +90,7 @@ public class JwtService {
         Cookie cookie = new Cookie("access_token", token);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        cookie.setMaxAge(3600);
+        cookie.setMaxAge(COOKIE_EXPIRATION_SEC);
         cookie.setSecure(false);
         response.addCookie(cookie);
     }
