@@ -1,6 +1,7 @@
 package spring.secondbite.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +54,8 @@ public class OrderService {
         AppUser user = securityService.getLoggedUserOrThrow();
         Specification<Order> specs = buildOrderSpecification(user, status);
 
-        return orderRepository.findAll(specs).stream()
+        Sort sortedOrders = Sort.by(Sort.Direction.DESC, "createdAt");
+        return orderRepository.findAll(specs, sortedOrders).stream()
                 .map(mapper::toDto)
                 .toList();
     }
