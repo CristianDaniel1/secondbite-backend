@@ -40,7 +40,7 @@ public abstract class ConsumerMapper {
             consumer.getUser().setPassword(encodedPassword);
         }
         if (dto.cpf() != null) consumer.setCpf(dto.cpf());
-        if (dto.zipcode() != null) consumer.setZipcode(dto.zipcode());
+        if (dto.address() != null) consumer.setAddress(dto.address());
         if (dto.phone() != null) consumer.setPhone(dto.phone());
 
         return consumer;

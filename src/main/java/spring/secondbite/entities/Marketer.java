@@ -22,8 +22,8 @@ public class Marketer {
     @Column(name = "phone", length = 15)
     private String phone;
 
-    @Column(name = "zipcode", length = 20)
-    private String zipcode;
+    @Column(name = "address", length = 200)
+    private String address;
 
     @Column(name = "latitude")
     private Double latitude;

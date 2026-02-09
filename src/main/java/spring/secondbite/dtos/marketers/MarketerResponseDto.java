@@ -1,5 +1,6 @@
 package spring.secondbite.dtos.marketers;
 
+import jakarta.validation.constraints.Size;
 import spring.secondbite.entities.enums.Role;
 
 import java.time.LocalDateTime;
@@ -10,7 +11,7 @@ public record MarketerResponseDto(
         UUID id,
         String name,
         String email,
-        String zipcode,
+        String address,
         String cnpj,
         Double latitude,
         Double longitude,

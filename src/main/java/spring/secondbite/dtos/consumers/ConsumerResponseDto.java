@@ -10,7 +10,7 @@ public record ConsumerResponseDto(
         UUID id,
         String name,
         String email,
-        String zipcode,
+        String address,
         String cpf,
         String phone,
         Set<Role> roles,

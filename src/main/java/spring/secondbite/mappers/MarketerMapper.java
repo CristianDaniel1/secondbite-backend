@@ -40,7 +40,7 @@ public abstract class MarketerMapper {
             marketer.getUser().setPassword(encodedPassword);
         }
         if (dto.cnpj() != null) marketer.setCnpj(dto.cnpj());
-        if (dto.zipcode() != null) marketer.setZipcode(dto.zipcode());
+        if (dto.address() != null) marketer.setAddress(dto.address());
         if (dto.phone() != null) marketer.setPhone(dto.phone());
         if (dto.stallName() != null) marketer.setStallName(dto.stallName());
         if (dto.latitude() != null) marketer.setLatitude(dto.latitude());

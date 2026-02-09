@@ -18,8 +18,8 @@ public record UpdateMarketerDto(
         @Size(min = 14, max = 14, message = "CNPJ must be exactly 14 digits")
         String cnpj,
 
-        @Size(max = 20, message = "Zipcode must be at most 20 characters")
-        String zipcode,
+        @Size(max = 255, message = "Address must be at most 255 characters")
+        String address,
 
         @Size(max = 15, message = "Phone must be at most 15 characters")
         String phone,

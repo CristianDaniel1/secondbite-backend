@@ -22,8 +22,8 @@ public class Consumer {
     @Column(name = "phone", length = 15)
     private String phone;
 
-    @Column(name = "zipcode", length = 20)
-    private String zipcode;
+    @Column(name = "address", length = 200)
+    private String address;
 
     @OneToOne(optional = false, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
