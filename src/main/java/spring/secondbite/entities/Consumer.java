@@ -19,7 +19,7 @@ public class Consumer {
     @Column(name = "cpf", length = 15, nullable = false, unique = true)
     private String cpf;
 
-    @Column(name = "phone", length = 15)
+    @Column(name = "phone", length = 15, nullable = false)
     private String phone;
 
     @Column(name = "address", length = 200)

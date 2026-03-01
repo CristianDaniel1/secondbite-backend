@@ -42,6 +42,9 @@ public class Order {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
+    @Column(name = "delivery_code", length = 4, nullable = false)
+    private String deliveryCode;
+
     @LastModifiedDate
     @Column(name = "modified_at")
     private LocalDateTime modifiedAt;

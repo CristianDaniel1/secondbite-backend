@@ -14,5 +14,6 @@ public record OrderResponseDto(
         Status status,
         List<OrderItemDto> items,
         BigDecimal totalAmount,
+        String deliveryCode,
         LocalDateTime createdAt
 ) {}

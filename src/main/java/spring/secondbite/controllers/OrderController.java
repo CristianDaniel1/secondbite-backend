@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import spring.secondbite.dtos.orders.OrderResponseDto;
-import spring.secondbite.dtos.orders.UpdateOrderStatusDto;
+import spring.secondbite.dtos.orders.CompleteOrderDto;
 import spring.secondbite.entities.enums.Status;
 import spring.secondbite.services.OrderService;
 
@@ -23,7 +23,7 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('CONSUMER')")
-    public ResponseEntity<List<OrderResponseDto>> checkout() {
+    public ResponseEntity<OrderResponseDto> checkout() {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.checkout());
     }
 
@@ -39,11 +39,29 @@ public class OrderController {
         return ResponseEntity.ok(service.getOrderById(id));
     }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<OrderResponseDto> updateStatus(
+    @PatchMapping("/{id}/accept")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<OrderResponseDto> acceptOrder(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.acceptOrder(id));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponseDto> cancelOrder(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.cancelOrder(id));
+    }
+
+    @PatchMapping("/{id}/ready")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<OrderResponseDto> markAsReady(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.markAsReady(id));
+    }
+
+    @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<OrderResponseDto> completeOrder(
             @PathVariable UUID id,
-            @RequestBody @Valid UpdateOrderStatusDto dto
+            @RequestBody @Valid CompleteOrderDto dto
     ) {
-        return ResponseEntity.ok(service.updateStatus(id, dto.status()));
+        return ResponseEntity.ok(service.completeOrder(id, dto.deliveryCode()));
     }
 }

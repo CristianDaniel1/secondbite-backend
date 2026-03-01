@@ -1,7 +1,9 @@
 package spring.secondbite.entities.enums;
 
 public enum Status {
-    COMPLETED,
     PENDING,
-    CANCELED
+    ACCEPTED,
+    READY_FOR_PICKUP,
+    CANCELED,
+    COMPLETED
 }

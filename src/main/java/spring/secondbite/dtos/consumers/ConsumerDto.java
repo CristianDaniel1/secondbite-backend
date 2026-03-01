@@ -29,5 +29,6 @@ public record ConsumerDto(
         String address,
 
         @Size(max = 15, message = "Phone must be at most 15 characters")
+        @NotBlank(message = "Phone is required")
         String phone) {
 }

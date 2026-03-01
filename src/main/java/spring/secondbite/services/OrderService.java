@@ -21,9 +21,8 @@ import spring.secondbite.security.SecurityService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,15 +38,40 @@ public class OrderService {
     private final OrderMapper mapper;
 
     @Transactional
-    public List<OrderResponseDto> checkout() {
+    public OrderResponseDto checkout() {
         Consumer consumer = getLoggedConsumer();
         Cart cart = cartService.getCartEntity(consumer);
 
         validateCartNotEmpty(cart);
-        List<Order> orders = processCheckout(cart, consumer);
+
+        Marketer marketer = cart.getItems().getFirst().getProduct().getMarketer();
+        for (CartItem item : cart.getItems()) {
+            if (!item.getProduct().getMarketer().getId().equals(marketer.getId()))
+                throw new ConflictException("Todos os produtos do carrinho devem pertencer ao mesmo feirante.");
+        }
+
+        Order order = new Order();
+        order.setConsumer(consumer);
+        order.setMarketer(marketer);
+        order.setStatus(Status.PENDING);
+        order.setDeliveryCode(generateDeliveryCode(consumer.getPhone()));
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (CartItem cartItem : cart.getItems()) {
+            OrderItem orderItem = createOrderItem(order, cartItem);
+            orderItems.add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getSubTotal());
+        }
+
+        order.setItems(orderItems);
+        order.setTotalAmount(totalAmount);
+
+        Order savedOrder = orderRepository.save(order);
         cartService.clearCart();
 
-        return orders.stream().map(mapper::toDto).toList();
+        return mapper.toDto(savedOrder);
     }
 
     public List<OrderResponseDto> getOrders(Status status) {
@@ -67,51 +91,80 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponseDto updateStatus(UUID id, Status newStatus) {
+    public OrderResponseDto acceptOrder(UUID id) {
         Order order = findOrderOrThrow(id);
         AppUser user = securityService.getLoggedUserOrThrow();
-        validateStatusChange(order, user, newStatus);
+        checkPermission(order, user);
 
-        if (newStatus == Status.CANCELED)
-            restoreStock(order);
+        if (!user.getRoles().contains(Role.MARKETER))
+            throw new NotAllowedException("Apenas o feirante pode aceitar o pedido.");
+        if (order.getStatus() != Status.PENDING)
+            throw new ConflictException("Apenas pedidos pendentes (PENDING) podem ser aceitos.");
 
-        order.setStatus(newStatus);
+        order.setStatus(Status.ACCEPTED);
         return mapper.toDto(orderRepository.save(order));
     }
 
-    private List<Order> processCheckout(Cart cart, Consumer consumer) {
-        Map<Marketer, List<CartItem>> itemsByMarketer = cart.getItems().stream()
-                .collect(Collectors.groupingBy(item -> item.getProduct().getMarketer()));
+    @Transactional
+    public OrderResponseDto cancelOrder(UUID id) {
+        Order order = findOrderOrThrow(id);
+        AppUser user = securityService.getLoggedUserOrThrow();
+        checkPermission(order, user);
 
-        List<Order> createdOrders = new ArrayList<>();
+        if (order.getStatus() == Status.COMPLETED || order.getStatus() == Status.CANCELED)
+            throw new ConflictException("Este pedido já foi finalizado ou cancelado.");
 
-        itemsByMarketer.forEach((marketer, items) -> {
-            Order order = createOrderForMarketer(consumer, marketer, items);
-            createdOrders.add(order);
-        });
+        if (user.getRoles().contains(Role.CONSUMER) && order.getStatus() != Status.PENDING)
+            throw new ConflictException("O feirante já está separando o pedido. Não é possível cancelar.");
 
-        return createdOrders;
+        restoreStock(order);
+
+        order.setStatus(Status.CANCELED);
+        return mapper.toDto(orderRepository.save(order));
     }
 
-    private Order createOrderForMarketer(Consumer consumer, Marketer marketer, List<CartItem> cartItems) {
-        Order order = new Order();
-        order.setConsumer(consumer);
-        order.setMarketer(marketer);
-        order.setStatus(Status.PENDING);
+    @Transactional
+    public OrderResponseDto markAsReady(UUID id) {
+        Order order = findOrderOrThrow(id);
+        AppUser user = securityService.getLoggedUserOrThrow();
+        checkPermission(order, user);
 
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        if (!user.getRoles().contains(Role.MARKETER))
+            throw new NotAllowedException("Apenas o feirante pode marcar o pedido como pronto.");
 
-        for (CartItem cartItem : cartItems) {
-            OrderItem orderItem = createOrderItem(order, cartItem);
-            orderItems.add(orderItem);
-            totalAmount = totalAmount.add(orderItem.getSubTotal());
-        }
+        if (order.getStatus() != Status.ACCEPTED)
+            throw new ConflictException("O pedido precisa estar aceito (ACCEPTED) antes de ser marcado como pronto.");
 
-        order.setItems(orderItems);
-        order.setTotalAmount(totalAmount);
+        order.setStatus(Status.READY_FOR_PICKUP);
+        return mapper.toDto(orderRepository.save(order));
+    }
 
-        return orderRepository.save(order);
+    @Transactional
+    public OrderResponseDto completeOrder(UUID id, String deliveryCode) {
+        Order order = findOrderOrThrow(id);
+        AppUser user = securityService.getLoggedUserOrThrow();
+        checkPermission(order, user);
+
+        if (!user.getRoles().contains(Role.MARKETER))
+            throw new NotAllowedException("Apenas o feirante pode dar baixa na entrega.");
+
+        if (order.getStatus() != Status.READY_FOR_PICKUP)
+            throw new ConflictException("O pedido precisa estar pronto para coleta (READY_FOR_PICKUP) para ser concluído.");
+
+        if (!order.getDeliveryCode().equals(deliveryCode))
+            throw new ConflictException("Código de entrega incorreto.");
+
+        order.setStatus(Status.COMPLETED);
+        return mapper.toDto(orderRepository.save(order));
+    }
+
+    private String generateDeliveryCode(String phone) {
+        if (phone == null || phone.isEmpty()) return "0000";
+
+        String digits = phone.replaceAll("\\D", "");
+        if (digits.length() < 4)
+            return String.format("%04d", new Random().nextInt(10000));
+        return digits.substring(digits.length() - 4);
     }
 
     private OrderItem createOrderItem(Order order, CartItem cartItem) {
@@ -134,23 +187,6 @@ public class OrderService {
             throw new ConflictException("Estoque insuficiente para o produto: " + product.getName());
         product.setQuantity(product.getQuantity() - quantity);
         productRepository.save(product);
-    }
-
-    private void validateStatusChange(Order order, AppUser user, Status newStatus) {
-        checkPermission(order, user);
-
-        boolean isConsumer = user.getRoles().contains(Role.CONSUMER);
-        boolean isMarketer = user.getRoles().contains(Role.MARKETER);
-
-        if (isConsumer) {
-            if (newStatus != Status.CANCELED)
-                throw new NotAllowedException("Consumidores só podem cancelar pedidos.");
-            if (order.getStatus() != Status.PENDING)
-                throw new NotAllowedException("Só é possível cancelar pedidos pendentes.");
-        } else if (isMarketer) {
-            if (order.getStatus() == Status.CANCELED)
-                throw new ConflictException("Não é possível alterar um pedido já cancelado.");
-        }
     }
 
     private void restoreStock(Order order) {
@@ -199,9 +235,7 @@ public class OrderService {
         boolean isMarketerOwner = user.getRoles().contains(Role.MARKETER)
                 && order.getMarketer().getUser().getId().equals(user.getId());
 
-        boolean isAdmin = user.getRoles().contains(Role.ADMIN);
-
-        if (!isConsumerOwner && !isMarketerOwner && !isAdmin)
+        if (!isConsumerOwner && !isMarketerOwner && !user.getRoles().contains(Role.ADMIN))
             throw new NotAllowedException("Você não tem permissão para acessar este pedido.");
     }
 }
