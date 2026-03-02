@@ -15,7 +15,7 @@ public record UpdateMarketerDto(
         @Size(min = 6, message = "Password must be at least 6 characters")
         String password,
 
-        @Size(min = 14, max = 14, message = "CNPJ must be exactly 14 digits")
+        @Size(min = 11,  message = "CPF/CNPJ must be at least 11 digits")
         String cnpj,
 
         @Size(max = 255, message = "Address must be at most 255 characters")

@@ -177,8 +177,7 @@ public class OrderService {
         orderItem.setOrder(order);
         orderItem.setProduct(product);
         orderItem.setQuantity(quantity);
-        orderItem.setPriceAtPurchase(product.getPrice());
-
+        orderItem.setPriceAtPurchase(product.getDiscountedPrice());
         return orderItem;
     }
 

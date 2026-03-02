@@ -29,6 +29,6 @@ public class CartItem {
 
     public BigDecimal getSubTotal() {
         if (product == null || quantity == null) return BigDecimal.ZERO;
-        return product.getPrice().multiply(BigDecimal.valueOf(quantity));
+        return product.getDiscountedPrice().multiply(BigDecimal.valueOf(quantity));
     }
 }

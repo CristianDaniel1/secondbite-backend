@@ -15,14 +15,15 @@ public record ProductDetailResponseDto (
         String sizeType,
         LocalDate validation,
         BigDecimal price,
+        BigDecimal originalPrice,
+        Integer discountPercentage,
         Category category,
         Integer quantity,
         List<String> images,
         LocalDateTime modifiedAt,
         LocalDateTime createdAt,
-        UUID marketerid,
+        UUID marketerId,
         String marketerName,
         String stallName,
         Double marketerRating
-) {
-}
+) {}
