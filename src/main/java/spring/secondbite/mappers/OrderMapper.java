@@ -12,6 +12,7 @@ public interface OrderMapper {
 
     @Mapping(target = "consumerName", source = "consumer.user.name")
     @Mapping(target = "marketerName", source = "marketer.user.name")
+    @Mapping(target = "marketerId", source = "marketer.id")
     OrderResponseDto toDto(Order order);
 
     @Mapping(target = "productId", source = "product.id")

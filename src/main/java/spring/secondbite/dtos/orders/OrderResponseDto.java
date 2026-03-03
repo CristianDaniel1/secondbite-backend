@@ -11,6 +11,7 @@ public record OrderResponseDto(
         UUID id,
         String consumerName,
         String marketerName,
+        UUID marketerId,
         Status status,
         List<OrderItemDto> items,
         BigDecimal totalAmount,

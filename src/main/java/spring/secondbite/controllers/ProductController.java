@@ -37,7 +37,6 @@ public class ProductController {
     }
 
     @GetMapping("/marketer/{id}")
-    @PreAuthorize("hasRole('MARKETER')")
     public ResponseEntity<List<ProductResponseDto>> getProductsByMarketer(@PathVariable("id") UUID id) {
         List<ProductResponseDto> products = service.findProductsByMarketer(id);
         return ResponseEntity.ok(products);

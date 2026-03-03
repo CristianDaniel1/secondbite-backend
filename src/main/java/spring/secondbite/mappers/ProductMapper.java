@@ -28,7 +28,7 @@ public interface ProductMapper {
     @Mapping(target = "discountPercentage", source = "productDto.discountPercentage")
     ProductDetailResponseDto toDetailResponseDto(
             ProductResponseDto productDto, UUID marketerId,
-            String marketerName, String stallName, Double rating);
+            String marketerName, String stallName, Double marketerRating);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "marketer", ignore = true)
