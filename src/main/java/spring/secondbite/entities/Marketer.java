@@ -34,6 +34,9 @@ public class Marketer {
     @Column(name = "stall_name")
     private String stallName;
 
+    @Column(name = "operating_schedule", length = 100)
+    private String operatingSchedule;
+
     @OneToOne(optional = false, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private AppUser user;

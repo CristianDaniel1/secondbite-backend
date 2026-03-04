@@ -26,5 +26,6 @@ public record UpdateMarketerDto(
 
         Double latitude,
         Double longitude,
-        String stallName) {
+        String stallName,
+        String operatingSchedule) {
 }

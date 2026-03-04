@@ -16,6 +16,7 @@ public record MarketerResponseDto(
         Double latitude,
         Double longitude,
         String stallName,
+        String operatingSchedule,
         String phone,
         Set<Role> roles,
         LocalDateTime createdAt,
