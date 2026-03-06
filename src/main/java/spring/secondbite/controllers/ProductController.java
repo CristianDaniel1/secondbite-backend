@@ -9,9 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import spring.secondbite.dtos.PageResponseDto;
-import spring.secondbite.dtos.products.ProductDetailResponseDto;
-import spring.secondbite.dtos.products.ProductDto;
-import spring.secondbite.dtos.products.ProductResponseDto;
+import spring.secondbite.dtos.products.*;
 import spring.secondbite.entities.enums.Category;
 import spring.secondbite.services.ProductService;
 
@@ -74,5 +72,25 @@ public class ProductController {
     public ResponseEntity<Void> deleteProduct(@PathVariable("id") UUID id) {
         service.deleteProduct(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/stock")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<ProductResponseDto> updateStock(
+            @PathVariable UUID id,
+            @RequestBody @Valid UpdateStockDto dto
+    ) {
+        ProductResponseDto updatedProduct = service.updateStock(id, dto);
+        return ResponseEntity.ok(updatedProduct);
+    }
+
+    @PostMapping("/{id}/clone")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<ProductResponseDto> cloneProduct(
+            @PathVariable UUID id,
+            @RequestBody @Valid CloneProductDto dto
+    ) {
+        ProductResponseDto clonedProduct = service.cloneProduct(id, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(clonedProduct);
     }
 }

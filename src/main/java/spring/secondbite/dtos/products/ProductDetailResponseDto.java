@@ -25,5 +25,7 @@ public record ProductDetailResponseDto (
         UUID marketerId,
         String marketerName,
         String stallName,
+        Boolean isAutoDiscount,
+        Integer manualDiscountPercentage,
         Double marketerRating
 ) {}

@@ -5,9 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import spring.secondbite.dtos.marketers.FlashSaleDto;
+import spring.secondbite.dtos.marketers.MarketerDashboardResponseDto;
 import spring.secondbite.dtos.marketers.MarketerResponseDto;
 import spring.secondbite.dtos.marketers.UpdateMarketerDto;
+import spring.secondbite.dtos.products.ProductResponseDto;
 import spring.secondbite.services.MarketerService;
+import spring.secondbite.services.ProductService;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MarketerController {
     private final MarketerService service;
+    private final ProductService productService;
 
     @GetMapping
     public ResponseEntity<List<MarketerResponseDto>> getMarketers() {
@@ -49,5 +54,21 @@ public class MarketerController {
     public ResponseEntity<List<MarketerResponseDto>> getAllMarketersForMap() {
         // Pode ser otimizado ainda
         return ResponseEntity.ok(service.findAllMarketers());
+    }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<MarketerDashboardResponseDto> getDashboardStats() {
+        MarketerDashboardResponseDto stats = service.getDashboardMetrics();
+        return ResponseEntity.ok(stats);
+    }
+
+    @PostMapping("/flash-sale")
+    @PreAuthorize("hasRole('MARKETER')")
+    public ResponseEntity<List<ProductResponseDto>> applyFlashSale(
+            @RequestBody @Valid FlashSaleDto dto
+    ) {
+        List<ProductResponseDto> updatedProducts = productService.applyFlashSale(dto);
+        return ResponseEntity.ok(updatedProducts);
     }
 }

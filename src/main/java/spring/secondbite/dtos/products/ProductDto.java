@@ -32,7 +32,9 @@ public record ProductDto(
         @Min(value = 1, message = "Quantity must be at least 1")
         Integer quantity,
 
-        LocalDateTime modifiedAt,
-        LocalDateTime createdAt
-) {
-}
+        Boolean isAutoDiscount,
+
+        @Min(value = 0, message = "Discount must be at least 0")
+        @Max(value = 100, message = "Discount must be at most 100")
+        Integer manualDiscountPercentage
+) {}

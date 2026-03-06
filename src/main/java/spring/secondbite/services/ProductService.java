@@ -9,9 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import spring.secondbite.dtos.PageResponseDto;
-import spring.secondbite.dtos.products.ProductDetailResponseDto;
-import spring.secondbite.dtos.products.ProductDto;
-import spring.secondbite.dtos.products.ProductResponseDto;
+import spring.secondbite.dtos.marketers.FlashSaleDto;
+import spring.secondbite.dtos.products.*;
 import spring.secondbite.entities.AppUser;
 import spring.secondbite.entities.Marketer;
 import spring.secondbite.entities.Product;
@@ -24,6 +23,7 @@ import spring.secondbite.repositories.ReviewRepository;
 import spring.secondbite.repositories.specs.ProductSpecs;
 import spring.secondbite.security.SecurityService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -126,6 +126,57 @@ public class ProductService {
         Product product = findProductOrThrow(id);
         checkProductIsFromMarketer(product);
         repository.delete(product);
+    }
+
+    @Transactional
+    public ProductResponseDto updateStock(UUID productId, UpdateStockDto dto) {
+        Product product = findProductOrThrow(productId);
+        AppUser currentUser = securityService.getLoggedUserOrThrow();
+
+        if (!product.getMarketer().getUser().getId().equals(currentUser.getId()))
+            throw new NotAllowedException("Você não tem permissão para alterar este produto.");
+
+        int newQuantity = product.getQuantity() + dto.quantityAdjustment();
+        product.setQuantity(Math.max(0, newQuantity));
+
+        Product savedProduct = repository.save(product);
+        return mapper.toResponseDto(savedProduct);
+    }
+
+    @Transactional
+    public List<ProductResponseDto> applyFlashSale(FlashSaleDto dto) {
+        AppUser currentUser = securityService.getLoggedUserOrThrow();
+        Marketer marketer = marketerService.findMarketerByUser(currentUser);
+
+        List<Product> products = repository.findAllByIdInAndMarketerId(dto.productIds(), marketer.getId());
+        if (products.isEmpty())
+            throw new NotFoundException("Nenhum produto válido encontrado para aplicar a promoção.");
+
+        products.forEach(product -> {
+            product.setIsAutoDiscount(false);
+            product.setManualDiscountPercentage(dto.discountPercentage());
+        });
+
+        List<Product> savedProducts = repository.saveAll(products);
+
+        return savedProducts.stream()
+                .map(mapper::toResponseDto)
+                .toList();
+    }
+
+    @Transactional
+    public ProductResponseDto cloneProduct(UUID id, CloneProductDto dto) {
+        AppUser currentUser = securityService.getLoggedUserOrThrow();
+        Marketer currentMarketer = marketerService.findMarketerByUser(currentUser);
+
+        Product original = findProductOrThrow(id);
+        Product cloned = mapper.cloneEntity(original, dto);
+
+        cloned.setMarketer(currentMarketer);
+        cloned.setImages(new ArrayList<>(original.getImages()));
+
+        Product savedClone = repository.save(cloned);
+        return mapper.toResponseDto(savedClone);
     }
 
     public void checkProductIsFromMarketer(Product product) {
