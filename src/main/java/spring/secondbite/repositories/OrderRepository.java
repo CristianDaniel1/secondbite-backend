@@ -22,4 +22,32 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
             @Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfDay") LocalDateTime endOfDay
     );
+
+    @Query("SELECT SUM((oi.product.price - oi.priceAtPurchase) * oi.quantity) " +
+            "FROM OrderItem oi JOIN oi.order o " +
+            "WHERE o.marketer.id = :marketerId " +
+            "AND o.status = :status " +
+            "AND o.createdAt >= :startOfDay " +
+            "AND o.createdAt <= :endOfDay " +
+            "AND oi.product.price > oi.priceAtPurchase")
+    BigDecimal sumSavedMoneyByDateRange(
+            @Param("marketerId") UUID marketerId,
+            @Param("status") Status status,
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay") LocalDateTime endOfDay
+    );
+
+    @Query("SELECT SUM(oi.quantity) " +
+            "FROM OrderItem oi JOIN oi.order o " +
+            "WHERE o.marketer.id = :marketerId " +
+            "AND o.status = :status " +
+            "AND o.createdAt >= :startOfDay " +
+            "AND o.createdAt <= :endOfDay " +
+            "AND oi.product.price > oi.priceAtPurchase")
+    Long sumSavedItemsByDateRange(
+            @Param("marketerId") UUID marketerId,
+            @Param("status") Status status,
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay") LocalDateTime endOfDay
+    );
 }

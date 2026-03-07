@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,6 +73,9 @@ public class MarketerService {
         Marketer marketer = findMarketerByUser(user);
         UUID marketerId = marketer.getId();
 
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
         Long pending = orderRepository.countByMarketerIdAndStatus(marketerId, Status.PENDING);
         Long accepted = orderRepository.countByMarketerIdAndStatus(marketerId, Status.ACCEPTED);
         BigDecimal revenue = calculateTodayRevenue(marketerId);
@@ -82,8 +84,20 @@ public class MarketerService {
         List<DiscountSuggestionDto> suggestions = generateDiscountSuggestions(marketerId);
         Long expiringSoon = (long) suggestions.size();
 
+        BigDecimal savedMoney = orderRepository.sumSavedMoneyByDateRange(marketerId, Status.COMPLETED, startOfDay, endOfDay);
+        savedMoney = savedMoney != null ? savedMoney : BigDecimal.ZERO;
+        Long savedItems = orderRepository.sumSavedItemsByDateRange(marketerId, Status.COMPLETED, startOfDay, endOfDay);
+        savedItems = savedItems != null ? savedItems : 0L;
+
         return new MarketerDashboardResponseDto(
-                pending, accepted, revenue, activeProducts, expiringSoon, suggestions
+                pending,
+                accepted,
+                revenue,
+                activeProducts,
+                expiringSoon,
+                suggestions,
+                savedMoney,
+                savedItems
         );
     }
 

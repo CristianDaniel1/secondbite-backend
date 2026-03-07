@@ -9,5 +9,7 @@ public record MarketerDashboardResponseDto(
         BigDecimal revenueToday,
         Long activeProductsCount,
         Long expiringSoonCount,
-        List<DiscountSuggestionDto> suggestedDiscounts
+        List<DiscountSuggestionDto> suggestedDiscounts,
+        BigDecimal savedMoneyToday,
+        Long savedItemsToday
 ) {}
